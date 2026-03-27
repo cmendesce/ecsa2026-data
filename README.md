@@ -1,0 +1,42 @@
+# Dataset Dictionary
+
+This document describes the columns present in `baseline.csv` (6 rows) and `retry.csv` (7,965 rows). Both files share a common schema; the retry dataset includes one additional column (`is_pareto`).
+
+## Common Columns
+
+| Column | Description | Data Type | Possible Values |
+|--------|-------------|-----------|-----------------|
+| `scenario` | Unique identifier for each experimental scenario | String | Pattern: `{type}-{group}-{workload}vu-{fault}f-{seq}`, e.g. `baseline-fcp-300vu-25f-00001`, `retry-fcp-500vu-75f-00036` |
+| `scenario_type` | High-level type of the experiment | String | `baseline`, `retry` |
+| `scenario_group` | Grouping of scenarios by retry scope | String | `baseline`, `retry_checkout`, `retry_frontend`, `retry_all` |
+| `fault_percentage` | Percentage of injected faults | Integer | `25`, `50`, `75` |
+| `workload_users` | Number of concurrent virtual users in the workload | Integer | `300`, `500` |
+| `checkout_error` | Number of failed checkout requests | Integer | Range: 73 -- 1,000 |
+| `checkout_success` | Number of successful checkout requests | Float | Range: 0.0 -- 792.0 |
+| `checkout_success_rate` | Ratio of successful checkouts over total requests | Float | Range: 0.0 -- 0.792 |
+| `checkout_http_req_duration` | Average HTTP request duration for checkout (ms) | Float | Range: 0.0 -- 6,070.39 |
+| `iteration_duration_p(95)` | 95th-percentile iteration duration (ms) | Float | Range: 17,399.87 -- 125,129.40 |
+| `normalized_iteration_duration_p(95)` | Min-max normalized 95th-percentile iteration duration | Float | Range: 0.0 -- 1.0 (baseline rows are always 0.0) |
+| `rt_fc_GRPC_BACKOFF_MULTIPLIER` | gRPC retry backoff multiplier for the **frontend-checkout** call | Float | `0.0`, `1.0`, `1.5`, `2.0` (0.0 = no retry configured) |
+| `rt_fc_GRPC_INITIAL_BACKOFF` | gRPC retry initial backoff (s) for the **frontend-checkout** call | Float | `0.0`, `0.5`, `1.0`, `1.5` |
+| `rt_fc_GRPC_MAX_ATTEMPTS` | gRPC retry max attempts for the **frontend-checkout** call | Float | `0.0`, `2.0`, `3.0`, `4.0`, `5.0` |
+| `rt_fc_GRPC_MAX_BACKOFF` | gRPC retry max backoff (s) for the **frontend-checkout** call | Float | `0.0`, `15.0` |
+| `rt_cp_GRPC_BACKOFF_MULTIPLIER` | gRPC retry backoff multiplier for the **checkout-payment** call | Float | `0.0`, `1.0`, `1.5`, `2.0` (0.0 = no retry configured) |
+| `rt_cp_GRPC_INITIAL_BACKOFF` | gRPC retry initial backoff (s) for the **checkout-payment** call | Float | `0.0`, `0.5`, `1.0`, `1.5` |
+| `rt_cp_GRPC_MAX_ATTEMPTS` | gRPC retry max attempts for the **checkout-payment** call | Float | `0.0`, `2.0`, `3.0`, `4.0`, `5.0` |
+| `rt_cp_GRPC_MAX_BACKOFF` | gRPC retry max backoff (s) for the **checkout-payment** call | Float | `0.0`, `15.0` |
+
+## Retry-Only Column
+
+| Column | Description | Data Type | Possible Values |
+|--------|-------------|-----------|-----------------|
+| `is_pareto` | Whether the scenario is on the Pareto front (optimal trade-off between success rate and latency) | Boolean | `True`, `False` |
+
+## Notes
+
+- In baseline rows all retry parameters (`rt_fc_*` and `rt_cp_*`) are `0.0`, indicating no retry policy is applied.
+- The `scenario_group` value determines which retry parameters are active:
+  - `retry_checkout` — only `rt_cp_*` parameters are non-zero.
+  - `retry_frontend` — only `rt_fc_*` parameters are non-zero.
+  - `retry_all` — both `rt_fc_*` and `rt_cp_*` parameters are non-zero.
+- `normalized_iteration_duration_p(95)` is min-max normalized within each experimental sub-group (workload + fault combination).
