@@ -1,0 +1,7 @@
+scenario,scenario_type,scenario_group,fault_percentage,workload_users,checkout_error,checkout_success,checkout_success_rate,checkout_http_req_duration,iteration_duration_p(95),normalized_iteration_duration_p(95),rt_fc_GRPC_BACKOFF_MULTIPLIER,rt_fc_GRPC_INITIAL_BACKOFF,rt_fc_GRPC_MAX_ATTEMPTS,rt_fc_GRPC_MAX_BACKOFF,rt_cp_GRPC_BACKOFF_MULTIPLIER,rt_cp_GRPC_INITIAL_BACKOFF,rt_cp_GRPC_MAX_ATTEMPTS,rt_cp_GRPC_MAX_BACKOFF
+baseline-fcp-300vu-25f-00001,baseline,baseline,25,300,445,555.0,0.555,1407.407074,29593.1114422,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+baseline-fcp-300vu-50f-00001,baseline,baseline,50,300,753,247.0,0.247,1302.45272,31732.726869899998,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+baseline-fcp-300vu-75f-00001,baseline,baseline,75,300,947,53.0,0.053,1802.524837,25607.7932979,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+baseline-fcp-500vu-25f-00001,baseline,baseline,25,500,465,535.0,0.535,2397.472585,49814.8519853,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+baseline-fcp-500vu-50f-00001,baseline,baseline,50,500,758,242.0,0.242,2444.888681,53414.50091895,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+baseline-fcp-500vu-75f-00001,baseline,baseline,75,500,941,59.0,0.059,1518.32795,51287.8594398,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
