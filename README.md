@@ -1,6 +1,18 @@
-# Dataset Dictionary
+# System-Level Effects of Multi-Connector Retries in Microservice Architectures
 
-This document describes the columns present in `baseline.csv` (6 rows) and `retry.csv` (7,965 rows). Both files share a common schema; the retry dataset includes one additional column (`is_pareto`).
+This repository contains the artifacts and data needed to reproduce the experiments from the paper, including the ResilienceBench-Operator CRD, application target, and processed/raw experimental results.
+
+## Folder Structure
+
+- **`crd/`** — Contains the benchmark CRD files that defines the experimental setup and parameters used for running the experiments.
+
+- **`onlineboutique/`** - The target application used in the experiments.
+
+- **`dataset/`** — Contains the processed and cleaned experimental results:
+  - `baseline.csv` — Results from baseline experiments without any retry policies applied.
+  - `retry.csv` — Results from retry mechanism experiments with various retry configurations tested.
+
+- **`raw/`** — Contains raw JSON output files generated directly by the experimental tool during execution. Each file is timestamped and represents a single experimental run. These files are processed and aggregated into the CSV files in the `dataset/` folder.
 
 ## Common Columns
 
