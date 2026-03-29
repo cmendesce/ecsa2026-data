@@ -4,9 +4,13 @@ This repository contains the artifacts and data needed to reproduce the experime
 
 ## Folder Structure
 
-- **`crd/`** — Contains the benchmark CRD files that defines the experimental setup and parameters used for running the experiments.
+- **`onlineboutique/`** - [Kustomize](https://kustomize.io/) manifests for the experiments including the target application, CRD configurations and load testing script.
 
-- **`onlineboutique/`** - The target application used in the experiments.
+- **`onlineboutique/base`** - Kustomize resuable files for others target applications. 
+
+- **`onlineboutique/overlay/`** - Contains the benchmark CRD files that defines the experimental setup and parameters used for running the experiments.
+
+- **`onlineboutique/overlay/app`** - The target application used in the experiments
 
 - **`dataset/`** — Contains the processed and cleaned experimental results:
   - `baseline.csv` — Results from baseline experiments without any retry policies applied.
