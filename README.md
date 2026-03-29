@@ -1,4 +1,4 @@
-# System-Level Effects of Multi-Connector Retries in Microservice Architectures
+# The Non-Linear Effects of Multi-Connector Retries in Microservice Architectures
 
 This repository contains the artifacts and data needed to reproduce the experiments from the paper, including the ResilienceBench-Operator CRD, application target, and processed/raw experimental results.
 
