@@ -1,0 +1,100 @@
+apiVersion: resiliencebench.io/v1beta1
+kind: ResilientService
+metadata:
+  name: cartservice
+spec:
+  faultContainerName: "envoy"
+  selector:
+    matchLabels:
+      app: cartservice
+---
+apiVersion: resiliencebench.io/v1beta1
+kind: ResilientService
+metadata:
+  name: paymentservice
+spec:
+  faultContainerName: "envoy"
+  selector:
+    matchLabels:
+      app: paymentservice
+---
+apiVersion: resiliencebench.io/v1beta1
+kind: ResilientService
+metadata:
+  name: currencyservice
+spec:
+  faultContainerName: "envoy"
+  selector:
+    matchLabels:
+      app: currencyservice
+---
+apiVersion: resiliencebench.io/v1beta1
+kind: ResilientService
+metadata:
+  name: frontendservice
+spec:
+  faultContainerName: "envoy"
+  selector:
+    matchLabels:
+      app: frontendservice
+---
+apiVersion: resiliencebench.io/v1beta1
+kind: ResilientService
+metadata:
+  name: checkoutservice
+spec:
+  faultContainerName: "envoy"
+  appContainerName: "server"
+  selector:
+    matchLabels:
+      app: checkoutservice
+---
+apiVersion: resiliencebench.io/v1beta1
+kind: ResilientService
+metadata:
+  name: adservice
+spec:
+  faultContainerName: "envoy"
+  selector:
+    matchLabels:
+      app: adservice
+---
+apiVersion: resiliencebench.io/v1beta1
+kind: ResilientService
+metadata:
+  name: productcatalogservice
+spec:
+  faultContainerName: "envoy"
+  selector:
+    matchLabels:
+      app: productcatalogservice
+---
+apiVersion: resiliencebench.io/v1beta1
+kind: ResilientService
+metadata:
+  name: recommendationservice
+spec:
+  faultContainerName: "envoy"
+  selector:
+    matchLabels:
+      app: recommendationservice
+---
+apiVersion: resiliencebench.io/v1beta1
+kind: ResilientService
+metadata:
+  name: shippingservice
+spec:
+  faultContainerName: "envoy"
+  selector:
+    matchLabels:
+      app: shippingservice
+---
+apiVersion: resiliencebench.io/v1beta1
+kind: ResilientService
+metadata:
+  name: emailservice
+spec:
+  faultContainerName: "envoy"
+  selector:
+    matchLabels:
+      app: emailservice

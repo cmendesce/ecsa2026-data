@@ -1,0 +1,40 @@
+apiVersion: resiliencebench.io/v1beta1
+kind: Benchmark
+metadata:
+  name: onlineboutique
+spec:
+  workload: fixed-iterations-loadtest
+  scenarios:
+    - name: bs-frontend
+      fault:
+        provider: envoy
+        percentages: [25, 50, 75]
+        services:
+         - cartservice
+      connectors:
+        - name: frontend-cart
+          source:
+            name: frontendservice
+          destination:
+            name: cartservice
+    - name: retry-cart
+      fault:
+        provider: envoy
+        percentages: [25, 50, 75]
+        services:
+         - cartservice
+      connectors:
+        - name: rt-frontend-cart
+          source:
+            name: frontendservice
+            envs:
+            - name: GRPC_MAX_ATTEMPTS
+              value: ["2", "3", "4", "5"]
+            - name: GRPC_INITIAL_BACKOFF
+              value: ["0.5s", "1s", "1.5s"]
+            - name: GRPC_MAX_BACKOFF
+              value: ["15s"]
+            - name: GRPC_BACKOFF_MULTIPLIER
+              value: ["1", "1.5", "2.0"]
+          destination:
+            name: cartservice
