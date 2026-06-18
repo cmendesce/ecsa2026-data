@@ -1,24 +1,128 @@
 # The Non-Linear Effects of Multi-Connector Retries in Microservice Architectures
 
-This repository contains the artifacts and data needed to reproduce the experiments from the paper, including the ResilienceBench-Operator CRD, application target, and processed/raw experimental results.
+This repository is the replication package for the paper *"The Non-Linear Effects of Multi-Connector Retries in Microservice Architectures."* It contains everything needed to (a) re-run the empirical study on a Kubernetes cluster and (b) reproduce the processed datasets and every figure presented in the paper from the raw experimental output.
 
-## Folder Structure
+## 1. Purpose and Relation to the Paper
 
-- **`experiment-config/`** - [Kustomize](https://kustomize.io/) manifests for the experiments including the target application, CRD configurations and load testing script.
+The paper presents an architecture-centric empirical study of how concurrent retry mechanisms across multiple connectors affect the resilience and performance of a Kubernetes-based microservice application. Using ResilienceBench-Operator (Aderaldo & Mendonça, *SBES 2025*) to orchestrate experiments on a modified version of [Online Boutique](https://github.com/GoogleCloudPlatform/microservices-demo), the study compares four benchmark configurations along the checkout request path under varying workloads, fault rates, and gRPC retry parameters.
 
-- **`experiment-config/base`** - Kustomize reusable files for other target applications. 
+This artifact supports the paper as follows:
 
-- **`experiment-config/overlays/onlineboutique`** - Contains the benchmark CRD files that defines the experimental setup and parameters used for running the experiments.
+- **`experiement-config/`** holds the declarative benchmark specification, the target application, and the load-testing script used to generate the experimental data — i.e. it lets you re-run the experiments end-to-end (Sections 2.2–2.4 of the paper).
+- **`raw/`** holds the untouched JSON output produced by each experimental run.
+- **`figures/data-processing-and-charts.ipynb`** processes the raw runs into the analysis datasets and renders the Pareto-front and parameter-profile (radar) charts — i.e. it reproduces the paper's results (Section 3, Figs. 2–6).
+- **`dataset/`** holds the processed, analysis-ready CSV files produced by the notebook.
 
-- **`experiment-config/overlays/app`** - The target application used in the experiments
+The four benchmark configurations in the paper map to the artifact as follows:
 
-- **`dataset/`** — Contains the processed and cleaned experimental results:
-  - `baseline.csv` — Results from baseline experiments without any retry policies applied.
-  - `retry.csv` — Results from retry mechanism experiments with various retry configurations tested.
+| Paper configuration | `scenario_group` in the data | Retry-enabled connector | Active retry columns |
+|---|---|---|---|
+| Baseline (no retry) | `baseline` | — | none (all `0.0`) |
+| Frontend-only | `retry_frontend` | frontend → checkout | `rt_fc_*` |
+| Checkout-only | `retry_checkout` | checkout → payment | `rt_cp_*` |
+| Dual-connector | `retry_all` | both | `rt_fc_*` and `rt_cp_*` |
 
-- **`raw/`** — Contains raw JSON output files generated directly by the experimental tool during execution. Each file is timestamped and represents a single experimental run. These files are processed and aggregated into the CSV files in the `dataset/` folder.
+The two end-to-end metrics analysed in the paper appear in the data as:
 
-## Common Columns
+- **Checkout success rate** → `checkout_success_rate` (y-axis, "Checkout Success Rate").
+- **Normalized P95 session time** → `normalized_iteration_duration_p(95)` (x-axis, "Relative Execution Time").
+
+## 2. Repository Structure
+
+- **`experiement-config/`** — [Kustomize](https://kustomize.io/) manifests for the experiments, including the target application, CRD configurations, and the load-testing script.
+  - **`experiement-config/base`** — Reusable Kustomize files (operator, PVC, config).
+  - **`experiement-config/overlays/onlineboutique`** — The benchmark CRD (`benchmark.yaml`), workload definition (`workload.yaml`), k6 load-test script (`k6.js`), and the modified Online Boutique manifests (`app/`).
+
+- **`raw/`** — Raw JSON output files generated directly by ResilienceBench-Operator during execution. Each file is named after the run timestamp (e.g. `2025-09-01-10-36-47.json`) and represents a single experimental run. These files are the input to the notebook.
+
+- **`figures/`** — The analysis notebook and the charts it produces:
+  - `data-processing-and-charts.ipynb` — A [Jupyter](https://jupyter.org/) notebook that reads the raw runs from `raw/`, processes and aggregates them into the CSV files in `dataset/`, and renders the paper's figures as `.pdf` files in this folder.
+
+- **`dataset/`** — Processed and cleaned experimental results produced by the notebook:
+  - `baseline.csv` — Baseline experiments, without any retry policy applied.
+  - `retry.csv` — Retry experiments across all retry configurations and scenario groups.
+  - `pareto.csv` — The Pareto-optimal subset of the retry configurations (generated when the notebook is run).
+
+## 3. Setup
+
+There are two independent ways to use this artifact. Most reviewers will only need **Option A**.
+
+### Option A — Reproduce the datasets and figures (recommended)
+
+This reprocesses the already-collected `raw/` data and regenerates `dataset/` and every figure. It is lightweight and runs on any machine.
+
+**Runtime environment**
+
+- Python 3.10+ (the data was processed with Python 3.12)
+- [Jupyter](https://jupyter.org/) (Notebook, JupyterLab, or the VS Code Jupyter extension)
+
+**Dependencies**
+
+```bash
+python3 -m venv venv
+source venv/bin/activate          # on Windows: venv\Scripts\activate
+pip install pandas numpy matplotlib jupyter
+```
+
+The first cell of the notebook also runs `pip install pandas matplotlib numpy`, so installing them up front is optional but avoids a re-install on each run.
+
+**Expected output**
+
+Running the notebook top to bottom produces:
+
+- In `dataset/`: `baseline.csv`, `retry.csv`, `pareto.csv`.
+- In `figures/`: the PDF charts listed in Section 4.
+
+Because the committed `baseline.csv` and `retry.csv` were generated by this exact pipeline, re-running the notebook overwrites them with byte-identical content.
+
+### Option B — Re-run the full experiments
+
+This regenerates the contents of `raw/` from scratch and requires the experimental infrastructure described in the paper (Section 2.4).
+
+**Runtime environment**
+
+- A Kubernetes cluster (the paper used Kubernetes 1.29 on Ubuntu 22.04: one control-plane node and three worker nodes, provisioned with Vagrant on an AMD Ryzen 9 3950X / 32 GB host).
+- [`kubectl`](https://kubernetes.io/docs/tasks/tools/) and [Kustomize](https://kustomize.io/).
+- ResilienceBench-Operator installed in the cluster (it orchestrates the runs, drives Envoy fault injection, and triggers the k6 workload).
+
+**Steps**
+
+```bash
+# Deploy the modified Online Boutique, the operator, and the benchmark CRD
+kubectl apply -k experiement-config/overlays/onlineboutique
+
+# The operator iterates over the scenarios defined in benchmark.yaml,
+# injecting faults via Envoy sidecars and running the k6 workload (k6.js).
+# Each scenario writes a results JSON to the configured results volume.
+```
+
+The benchmark specification (`experiement-config/overlays/onlineboutique/benchmark.yaml`) defines the fault percentages (25%, 50%, 75%), the retry-enabled connectors, and the retry-parameter space (`GRPC_MAX_ATTEMPTS = {2,3,4,5}`, `GRPC_INITIAL_BACKOFF = {0.5s,1s,1.5s}`, `GRPC_MAX_BACKOFF = 15s`, `GRPC_BACKOFF_MULTIPLIER = {1,1.5,2.0}`). Collect the resulting JSON files into `raw/`, naming each after its run timestamp, then proceed with Option A.
+
+## 4. Reproducing the Key Results
+
+All paper figures are produced by `figures/data-processing-and-charts.ipynb`. Open it and **run the cells in order, top to bottom**. Each cell maps to a specific result:
+
+| Step (cell) | Action | Output | Paper reference |
+|---|---|---|---|
+| 1 | Install dependencies | — | — |
+| 2 | Read `raw/`, process and normalize, write datasets | `dataset/baseline.csv`, `dataset/retry.csv` | Sections 2.5–2.6 |
+| 3 | Per-group Pareto-frontier scatter plots | `figures/pareto-retry_frontend.pdf`, `figures/pareto-retry_checkout.pdf`, `figures/pareto-retry_all.pdf` | **Figs. 2, 3, 4** |
+| 4 | Extract Pareto-optimal configurations | `dataset/pareto.csv` | Section 2.6 |
+| 5 | Combined Pareto overlay (all groups) | `figures/pareto.pdf` | RQ1 summary |
+| 6 | Radar charts of Pareto-optimal parameters (single-connector) | `figures/radar-retry_frontend.pdf`, `figures/radar-retry_checkout.pdf` | **Fig. 5 (a) and (b)** |
+| 7 | Radar charts of Pareto-optimal parameters (dual-connector) | `figures/radar-retry_all.pdf` | **Fig. 6** |
+| 8 | Scaled radar for checkout-only configurations | `figures/radar-retry-checkout.pdf` | Supplementary view of Fig. 5b |
+
+**Mapping figures to the research questions:**
+
+- **RQ1 — Impact of multi-connector retries** (Figs. 2–4): the Pareto frontiers show that frontend-only retries (Fig. 2) yield flat, narrow frontiers near the baseline; checkout-only retries (Fig. 3) shift the frontier toward higher success rates; and dual-connector retries (Fig. 4) expand the set of Pareto-optimal solutions but add only modest gains over the best checkout-only configuration.
+- **RQ2 — Effect of parameter variation** (Figs. 5–6): the radar charts of Pareto-optimal parameter profiles show scattered/irregular profiles for frontend-only (Fig. 5a), compact/stable profiles for checkout-only (Fig. 5b), and a more diverse, harder-to-tune space for dual-connector (Fig. 6).
+
+> Note: the notebook reads from `raw/` and writes to `dataset/` using paths relative to its own location, so it works whether you launch Jupyter from the repository root or from inside `figures/`.
+
+## 5. Data Dictionary
+
+### Common Columns
 
 | Column | Description | Data Type | Possible Values |
 |--------|-------------|-----------|-----------------|
@@ -31,8 +135,8 @@ This repository contains the artifacts and data needed to reproduce the experime
 | `checkout_success` | Number of successful checkout requests | Float | Range: 0.0 -- 792.0 |
 | `checkout_success_rate` | Ratio of successful checkouts over total requests | Float | Range: 0.0 -- 0.792 |
 | `checkout_http_req_duration` | Average HTTP request duration for checkout (ms) | Float | Range: 0.0 -- 6,070.39 |
-| `iteration_duration_p(95)` | 95th-percentile iteration duration (ms) | Float | Range: 17,399.87 -- 125,129.40 |
-| `normalized_iteration_duration_p(95)` | Min-max normalized 95th-percentile iteration duration | Float | Range: 0.0 -- 1.0 (baseline rows are always 0.0) |
+| `iteration_duration_p(95)` | 95th-percentile iteration (session) duration (ms) | Float | Range: 17,399.87 -- 125,129.40 |
+| `normalized_iteration_duration_p(95)` | Min-max normalized 95th-percentile session duration | Float | Range: 0.0 -- 1.0 (baseline rows are always 0.0) |
 | `rt_fc_GRPC_BACKOFF_MULTIPLIER` | gRPC retry backoff multiplier for the **frontend-checkout** call | Float | `0.0`, `1.0`, `1.5`, `2.0` (0.0 = no retry configured) |
 | `rt_fc_GRPC_INITIAL_BACKOFF` | gRPC retry initial backoff (s) for the **frontend-checkout** call | Float | `0.0`, `0.5`, `1.0`, `1.5` |
 | `rt_fc_GRPC_MAX_ATTEMPTS` | gRPC retry max attempts for the **frontend-checkout** call | Float | `0.0`, `2.0`, `3.0`, `4.0`, `5.0` |
@@ -42,13 +146,13 @@ This repository contains the artifacts and data needed to reproduce the experime
 | `rt_cp_GRPC_MAX_ATTEMPTS` | gRPC retry max attempts for the **checkout-payment** call | Float | `0.0`, `2.0`, `3.0`, `4.0`, `5.0` |
 | `rt_cp_GRPC_MAX_BACKOFF` | gRPC retry max backoff (s) for the **checkout-payment** call | Float | `0.0`, `15.0` |
 
-## Retry-Only Column
+### Retry-Only Column
 
 | Column | Description | Data Type | Possible Values |
 |--------|-------------|-----------|-----------------|
 | `is_pareto` | Whether the scenario is on the Pareto front (optimal trade-off between success rate and latency) | Boolean | `True`, `False` |
 
-## Notes
+### Notes
 
 - In baseline rows all retry parameters (`rt_fc_*` and `rt_cp_*`) are `0.0`, indicating no retry policy is applied.
 - The `scenario_group` value determines which retry parameters are active:
@@ -56,4 +160,5 @@ This repository contains the artifacts and data needed to reproduce the experime
   - `retry_frontend` — only `rt_fc_*` parameters are non-zero.
   - `retry_all` — both `rt_fc_*` and `rt_cp_*` parameters are non-zero.
 - `normalized_iteration_duration_p(95)` is min-max normalized within each experimental sub-group (workload + fault combination).
-- The `raw` folder contains the files generated by the tool during execution, while the dataset (retry and baseline files) consists of post-processed files.
+- The 400-virtual-user runs present in some raw files are intentionally filtered out during processing; the analysis uses the 300- and 500-user workloads reported in the paper.
+- The `raw/` folder contains the files generated by the tool during execution, while the `dataset/` files (`baseline.csv`, `retry.csv`, `pareto.csv`) are post-processed.
