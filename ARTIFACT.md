@@ -18,7 +18,7 @@ regenerated on a commodity machine.
 
 The artifact is archived on Zenodo and is permanently available at:
 
-<https://zenodo.org/records/20754087>
+<https://zenodo.org/records/21364082>
 
 ## Purpose
 
