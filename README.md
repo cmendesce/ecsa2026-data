@@ -61,10 +61,14 @@ This reprocesses the already-collected `raw/` data and regenerates `dataset/` an
 ```bash
 python3 -m venv venv
 source venv/bin/activate          # on Windows: venv\Scripts\activate
-pip install pandas numpy matplotlib jupyter
+pip install -r requirements.txt
 ```
 
-The first cell of the notebook also runs `pip install pandas matplotlib numpy`, so installing them up front is optional but avoids a re-install on each run.
+`requirements.txt` is a fully-pinned lockfile of the exact versions used to
+process the data and render the figures (verified on Python 3.12 to reproduce
+the committed datasets byte-for-byte). The first cell of the notebook also runs
+`pip install pandas matplotlib numpy`, so installing from the lockfile up front
+is optional but avoids a re-install on each run.
 
 **Expected output**
 
